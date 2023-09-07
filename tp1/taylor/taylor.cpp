@@ -28,18 +28,18 @@ void thread_function(long double * ptr, int target, int start, int end){
 
 long double parallel_taylor(int num, int iters, int threads) {
     long double res = 0;
-    std::mutex resMutex;  // Mutex to protect the shared variable res
-    std::thread array[threads];
+    mutex resMutex;  // Mutex to protect the shared variable res
+    thread array[threads];
 
     for (int i = 0; i < threads; i++) {
         int start = (i * iters) / threads;
         int end = ((i + 1) * iters) / threads;
-        array[i] = std::thread([&res, &resMutex, num, start, end]() {
+        array[i] = thread([&res, &resMutex, num, start, end]() {
             long double localSum = 0;
             for (int j = start; j <= end; j++) {
                 localSum += taylor_iter(num, j);
             }
-            std::lock_guard<std::mutex> lock(resMutex);
+            lock_guard<mutex> lock(resMutex);
             res += localSum;
         });
     }
@@ -58,8 +58,8 @@ double get_time(timeval t1, timeval t2){
 }
 
 int main(){
-    int NUM = 150000000;
-    int ITERS = 100000000;
+    int NUM = 1500000;
+    int ITERS = 10000000;
     int THREADS = 8;
 
     timeval start, end;
@@ -83,5 +83,5 @@ int main(){
     cout << "Tiempo de ejecucion: " << time2 << endl;
     
     double speedup = time1/time2;
-    cout << "Speedup using " << THREADS << " threads: " << speedup << endl;
+    cout << "Speedup usando " << THREADS << " hilos: " << speedup << endl;
 }

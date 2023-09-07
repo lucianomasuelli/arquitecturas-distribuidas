@@ -6,15 +6,15 @@
 #include <vector>
 
 using namespace std;
-std::mutex resultsMutex;
+mutex resultsMutex;
 
-void printResults(const std::vector<std::array<int, 2>>& results) {
+void printResults(const vector<array<int, 2>>& results) {
     for (const std::array<int, 2>& arr : results) {
         cout << "La subcadena " << arr[0] << " aparece " << arr[1] << " veces en el texto" << endl;
     }
 }
 
-void patternMatch(string pattern, string content,int i, std::vector<std::array<int, 2>>& vec){
+void patternMatch(string pattern, string content,int i, vector<array<int, 2>>& vec){
     int count = 0;
     int pos = 0;
     
@@ -27,7 +27,7 @@ void patternMatch(string pattern, string content,int i, std::vector<std::array<i
     
 }
 
-std::vector<std::array<int, 2>> serialPatternMatching(){
+vector<array<int, 2>> serialPatternMatching(){
     ifstream fin("texto.txt");
     string content;
     getline(fin, content);
@@ -35,7 +35,7 @@ std::vector<std::array<int, 2>> serialPatternMatching(){
     ifstream patterns("patrones.txt");
     
     int i = 0;
-    std::vector<std::array<int, 2>> results;
+    vector<array<int, 2>> results;
 
     string pattern;
     while (getline(patterns, pattern)){
@@ -46,8 +46,8 @@ std::vector<std::array<int, 2>> serialPatternMatching(){
     return results;
 }
 
-std::vector<std::array<int,2>> parallelPatternMatching() {
-    std::thread arr[32];
+vector<array<int,2>> parallelPatternMatching() {
+    thread arr[32];
 
     ifstream fin("texto.txt");
     string content;
@@ -55,11 +55,11 @@ std::vector<std::array<int,2>> parallelPatternMatching() {
 
     ifstream patterns("patrones.txt");
     int i = 0;
-    std::vector<std::array<int, 2>> results;
+    vector<array<int, 2>> results;
 
     string pattern;
     while (getline(patterns, pattern)){
-        arr[i] = std::thread(patternMatch, pattern, content, i, ref(results));
+        arr[i] = thread(patternMatch, pattern, content, i, ref(results));
         i++;
     }
 
@@ -80,13 +80,13 @@ int main() {
     timeval start, end;
     
     gettimeofday(&start, NULL);
-    std::vector<std::array<int, 2>> results = serialPatternMatching();
+    vector<array<int, 2>> results = serialPatternMatching();
     gettimeofday(&end, NULL);
     double serialTime = get_time(start, end);
     cout << "Serial time: " << serialTime << endl;
 
     gettimeofday(&start, NULL);
-    std::vector<std::array<int, 2>> results2 = parallelPatternMatching();
+    vector<array<int, 2>> results2 = parallelPatternMatching();
     gettimeofday(&end, NULL);
     double parallelTime = get_time(start, end);
     cout << "Parallel time: " << parallelTime << endl;

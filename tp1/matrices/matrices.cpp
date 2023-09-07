@@ -91,9 +91,9 @@ float get_total(int size, vector<vector<float>> matrix){
 
 
 int main(){
-    int SIZE = 300;
+    int SIZE = 1000;
     int THREADS = 16;
-
+    cout << "Multiplicacion de matrices de " << SIZE << "x" << SIZE << endl << "--------------" << endl;
     vector<vector<float>> A = generate_matrix(SIZE, 0.1);
     vector<vector<float>> B = generate_matrix(SIZE, 0.2);
     

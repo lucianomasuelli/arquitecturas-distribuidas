@@ -14,6 +14,7 @@ void printResults(const vector<array<int, 2>>& results) {
     }
 }
 
+
 void patternMatch(string pattern, string content,int i, vector<array<int, 2>>& vec){
     int count = 0;
     int pos = 0;
@@ -30,7 +31,7 @@ void patternMatch(string pattern, string content,int i, vector<array<int, 2>>& v
 vector<array<int, 2>> serialPatternMatching(){
     ifstream fin("texto.txt");
     string content;
-    getline(fin, content);
+    getline(fin, content);  // lee el archivo y lo guarda en content
 
     ifstream patterns("patrones.txt");
     

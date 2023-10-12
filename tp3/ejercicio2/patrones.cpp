@@ -16,16 +16,18 @@ vector<array<string, 3>> parallelPatternMatching() {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    // Get hostname and IP address
-    char hostname[256];
-    gethostname(hostname, sizeof(hostname));
-    struct hostent* host = gethostbyname(hostname);
-    char ip[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, host->h_addr_list[0], ip, INET_ADDRSTRLEN);
+    // Get hostname
+    char* hostname = getenv("HOSTNAME");
+    if (hostname == NULL) {
+        hostname = getenv("HOST");
+    }
+    if (hostname == NULL) {
+        hostname = (char*)"unknown";
+    }
 
     // Read patterns from file
     vector<string> patterns;
-    ifstream patternFile("patterns.txt");
+    ifstream patternFile("patrones.txt");
     string pattern;
     while (getline(patternFile, pattern)) {
         patterns.push_back(pattern);
@@ -40,7 +42,7 @@ vector<array<string, 3>> parallelPatternMatching() {
     int endPattern = startPattern + patternsPerProcess + (rank < extraPatterns ? 1 : 0);
 
     // Read text from file
-    ifstream textFile("text.txt");
+    ifstream textFile("texto.txt");
     string text((istreambuf_iterator<char>(textFile)), istreambuf_iterator<char>());
     textFile.close();
 
@@ -53,17 +55,32 @@ vector<array<string, 3>> parallelPatternMatching() {
             count++;
             pos = text.find(patterns[i], pos + 1);
         }
-        matches[i - startPattern] = {patterns[i], to_string(count), ip};
+        if (i - startPattern < matches.size()) {
+            matches[i - startPattern] = {patterns[i], to_string(count), hostname};
+        } else {
+            cout << "Error: matches index " << i - startPattern << " out of bounds" << endl;
+        }
+    }
+
+    //print results
+    cout << "Printing results from process " << rank << ":" << endl;
+    for (int i = 0; i < matches.size(); i++) {
+        cout << "El patron " << matches[i][0] << " aparece " << matches[i][1] << " veces. Buscado por " << matches[i][2] << endl;
     }
 
     // Gather results from all processes
     vector<array<string, 3>> allMatches(numPatterns);
-    MPI_Gather(matches.data(), matches.size() * 3, MPI_CHAR, allMatches.data(), 3, MPI_CHAR, 0, MPI_COMM_WORLD);
+    MPI_Gather(matches.data(), matches.size() * 3, MPI_CHAR, allMatches.data(), 50, MPI_CHAR, 0, MPI_COMM_WORLD);
 
     // Print results from root process
     if (rank == 0) {
-        for (int i = 0; i < numPatterns; i++) {
-            cout << "Pattern " << allMatches[i][0] << ": " << allMatches[i][1] << " matches (searched by " << allMatches[i][2] << ")" << endl;
+        cout << "Printing results:" << endl;
+        if (allMatches.size() == numPatterns) {
+            for (int i = 0; i < numPatterns; i++) {
+                cout << "El patron " << i << " aparece " << allMatches[i][1] << " veces. Buscado por " << allMatches[i][2] << endl;
+            }
+        } else {
+            cout << "Error: allMatches has size " << allMatches.size() << ", expected " << numPatterns << endl;
         }
     }
 
@@ -73,6 +90,7 @@ vector<array<string, 3>> parallelPatternMatching() {
 }
 
 int main(int argc, char** argv) {
+    cout << "Parallel pattern matching" << endl;
     MPI_Init(&argc, &argv);
     parallelPatternMatching();
     return 0;

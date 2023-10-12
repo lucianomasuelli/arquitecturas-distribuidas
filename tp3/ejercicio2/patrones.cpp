@@ -71,3 +71,9 @@ vector<array<string, 3>> parallelPatternMatching() {
 
     return allMatches;
 }
+
+int main(int argc, char** argv) {
+    MPI_Init(&argc, &argv);
+    parallelPatternMatching();
+    return 0;
+}

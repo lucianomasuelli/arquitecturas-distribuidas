@@ -63,35 +63,51 @@ vector<array<string, 3>> parallelPatternMatching() {
     }
 
     //print results
-    cout << "Printing results from process " << rank << ":" << endl;
+    /* cout << "Printing results from process " << rank << ":" << endl;
     for (int i = 0; i < matches.size(); i++) {
         cout << "El patron " << matches[i][0] << " aparece " << matches[i][1] << " veces. Buscado por " << matches[i][2] << endl;
+    } */
+    
+    // Gather results from all processes
+    vector<array<string, 3>> allMatches(numPatterns, {"", "0", "N/A"});
+    MPI_Gather(matches.data(), matches.size() * 3, MPI_CHAR, allMatches.data(), numPatterns * 3, MPI_CHAR, 0, MPI_COMM_WORLD);
+
+    if (rank == 0) {
+        cout << "Hola " << allMatches[3][1] << endl;
+        for (int i = 0; i < allMatches.size(); i++) {
+            if (allMatches[i][2] != "N/A"){
+            cout << "Pattern " << i << " appears " << allMatches[i][1] << " times. Found by process " << allMatches[i][2] << endl; 
+            }
+        }
     }
 
-    // Gather results from all processes
-    vector<array<string, 3>> allMatches(numPatterns);
-    MPI_Gather(matches.data(), matches.size() * 3, MPI_CHAR, allMatches.data(), 50, MPI_CHAR, 0, MPI_COMM_WORLD);
-
     // Print results from root process
-    if (rank == 0) {
+    /* if (rank == 0) {
         cout << "Printing results:" << endl;
         if (allMatches.size() == numPatterns) {
             for (int i = 0; i < numPatterns; i++) {
-                cout << "El patron " << i << " aparece " << allMatches[i][1] << " veces. Buscado por " << allMatches[i][2] << endl;
+                cout << "El patron " << i << " aparece " << allMatches[i][1] << " veces." << endl;
             }
         } else {
             cout << "Error: allMatches has size " << allMatches.size() << ", expected " << numPatterns << endl;
         }
-    }
+    } */
 
-    MPI_Finalize();
+    if(MPI_Finalize()!=MPI_SUCCESS)
+    {
+        cout<<"Error finalizando MPI"<<endl;
+        exit(1);
+    }
 
     return allMatches;
 }
 
 int main(int argc, char** argv) {
     cout << "Parallel pattern matching" << endl;
-    MPI_Init(&argc, &argv);
+    if (MPI_Init(&argc, &argv) != MPI_SUCCESS) {
+        cout << "Error initializing MPI" << endl;
+        exit(1);
+    }
     parallelPatternMatching();
     return 0;
 }

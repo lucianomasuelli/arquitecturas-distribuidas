@@ -11,8 +11,12 @@ int main(int argc, char** argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
+    char direcciones_ip[size][20]; // Almacenar las direcciones IP
     char direccion_ip[20];
     obtener_IP(direccion_ip); // Obtener la dirección IP
+
+    // Gather all IP addresses to the root process
+    MPI_Gather(direccion_ip, 20, MPI_CHAR, direcciones_ip, 20, MPI_CHAR, 0, MPI_COMM_WORLD);
 
     if (rank < 32) {
         // Cada proceso con rango menor a 32 buscará un patrón específico
@@ -22,6 +26,7 @@ int main(int argc, char** argv) {
         std::ifstream patronesFile("patrones.txt");
         for (int i = 0; i <= rank; ++i) {
             std::getline(patronesFile, patron);
+
         }
 
         // Leer la línea de texto
@@ -44,7 +49,7 @@ int main(int argc, char** argv) {
 
     if (rank == 0) {
         int resultados[size] = {0}; // Inicializar resultados a 0
-        char direcciones_ip[size][20]; // Almacenar las direcciones IP
+        //char direcciones_ip[size][20];
 
         for (int i = 0; i < size; ++i) {
             MPI_Recv(&resultados[i], 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);

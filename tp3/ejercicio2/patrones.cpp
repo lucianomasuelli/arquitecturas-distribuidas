@@ -1,113 +1,62 @@
 #include <iostream>
 #include <fstream>
-#include <sys/time.h>
-#include <thread>
-#include <mutex>
-#include <vector>
-#include <array>
-#include <netdb.h>
-#include <arpa/inet.h>
+#include <string>
 #include <mpi.h>
+#include "direccion_IP.cpp"
 
-using namespace std;
+int main(int argc, char** argv) {
+    MPI_Init(&argc, &argv);
 
-vector<array<string, 3>> parallelPatternMatching() {
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    // Get hostname
-    char* hostname = getenv("HOSTNAME");
-    if (hostname == NULL) {
-        hostname = getenv("HOST");
-    }
-    if (hostname == NULL) {
-        hostname = (char*)"unknown";
-    }
+    char direccion_ip[20];
+    obtener_IP(direccion_ip); // Obtener la dirección IP
 
-    // Read patterns from file
-    vector<string> patterns;
-    ifstream patternFile("patrones.txt");
-    string pattern;
-    while (getline(patternFile, pattern)) {
-        patterns.push_back(pattern);
-    }
-    patternFile.close();
+    if (rank < 32) {
+        // Cada proceso con rango menor a 32 buscará un patrón específico
 
-    // Divide patterns among processes
-    int numPatterns = patterns.size();
-    int patternsPerProcess = numPatterns / size;
-    int extraPatterns = numPatterns % size;
-    int startPattern = rank * patternsPerProcess + min(rank, extraPatterns);
-    int endPattern = startPattern + patternsPerProcess + (rank < extraPatterns ? 1 : 0);
+        // Leer el patrón correspondiente al rango del proceso
+        std::string patron;
+        std::ifstream patronesFile("patrones.txt");
+        for (int i = 0; i <= rank; ++i) {
+            std::getline(patronesFile, patron);
+        }
 
-    // Read text from file
-    ifstream textFile("texto.txt");
-    string text((istreambuf_iterator<char>(textFile)), istreambuf_iterator<char>());
-    textFile.close();
+        // Leer la línea de texto
+        std::ifstream textoFile("texto.txt");
+        std::string linea;
+        std::getline(textoFile, linea);
 
-    // Count matches for each pattern
-    vector<array<string, 3>> matches(endPattern - startPattern);
-    for (int i = startPattern; i < endPattern; i++) {
+        // Contar ocurrencias del patrón
+        size_t pos = 0;
         int count = 0;
-        size_t pos = text.find(patterns[i]);
-        while (pos != string::npos) {
-            count++;
-            pos = text.find(patterns[i], pos + 1);
+        while ((pos = linea.find(patron, pos)) != std::string::npos) {
+            ++count;
+            pos += patron.length();
         }
-        if (i - startPattern < matches.size()) {
-            matches[i - startPattern] = {patterns[i], to_string(count), hostname};
-        } else {
-            cout << "Error: matches index " << i - startPattern << " out of bounds" << endl;
-        }
-    }
 
-    //print results
-    /* cout << "Printing results from process " << rank << ":" << endl;
-    for (int i = 0; i < matches.size(); i++) {
-        cout << "El patron " << matches[i][0] << " aparece " << matches[i][1] << " veces. Buscado por " << matches[i][2] << endl;
-    } */
-    
-    // Gather results from all processes
-    vector<array<string, 3>> allMatches(numPatterns, {"", "0", "N/A"});
-    MPI_Gather(matches.data(), matches.size() * 3, MPI_CHAR, allMatches.data(), numPatterns * 3, MPI_CHAR, 0, MPI_COMM_WORLD);
+        // Enviar el resultado y la dirección IP al proceso 0
+        MPI_Send(&count, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+        MPI_Send(direccion_ip, 20, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
+    }
 
     if (rank == 0) {
-        cout << "Hola " << allMatches[3][1] << endl;
-        for (int i = 0; i < allMatches.size(); i++) {
-            if (allMatches[i][2] != "N/A"){
-            cout << "Pattern " << i << " appears " << allMatches[i][1] << " times. Found by process " << allMatches[i][2] << endl; 
-            }
+        int resultados[size] = {0}; // Inicializar resultados a 0
+        char direcciones_ip[size][20]; // Almacenar las direcciones IP
+
+        for (int i = 0; i < size; ++i) {
+            MPI_Recv(&resultados[i], 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(direcciones_ip[i], 20, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+
+        // Imprimir resultados ordenados
+        for (int i = 0; i < size; ++i) {
+            std::cout << "el patron " << i << " aparece " << resultados[i] << " veces. Buscado por " << direcciones_ip[i] << std::endl;
         }
     }
 
-    // Print results from root process
-    /* if (rank == 0) {
-        cout << "Printing results:" << endl;
-        if (allMatches.size() == numPatterns) {
-            for (int i = 0; i < numPatterns; i++) {
-                cout << "El patron " << i << " aparece " << allMatches[i][1] << " veces." << endl;
-            }
-        } else {
-            cout << "Error: allMatches has size " << allMatches.size() << ", expected " << numPatterns << endl;
-        }
-    } */
-
-    if(MPI_Finalize()!=MPI_SUCCESS)
-    {
-        cout<<"Error finalizando MPI"<<endl;
-        exit(1);
-    }
-
-    return allMatches;
-}
-
-int main(int argc, char** argv) {
-    cout << "Parallel pattern matching" << endl;
-    if (MPI_Init(&argc, &argv) != MPI_SUCCESS) {
-        cout << "Error initializing MPI" << endl;
-        exit(1);
-    }
-    parallelPatternMatching();
+    MPI_Finalize();
     return 0;
 }

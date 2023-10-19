@@ -13,7 +13,14 @@ int main(int argc, char** argv) {
 
     char direcciones_ip[size][20]; // Almacenar las direcciones IP
     char direccion_ip[20];
-    obtener_IP(direccion_ip); // Obtener la dirección IP
+    for(int i=0; i<rank; i++){
+        obtener_IP(direccion_ip); // Obtener la dirección IP
+        strncpy(direcciones_ip[i], direccion_ip, 20); // Copiar la dirección IP al arreglo
+        std::cout << "rank: " << rank << std::endl;
+        std::cout << "direccion_ip: " << direccion_ip << std::endl;
+        std::cout << "direcciones_ip: " << direcciones_ip[i] << std::endl;
+    }
+    
 
     // Gather all IP addresses to the root process
     MPI_Gather(direccion_ip, 20, MPI_CHAR, direcciones_ip, 20, MPI_CHAR, 0, MPI_COMM_WORLD);

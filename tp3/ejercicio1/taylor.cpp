@@ -10,6 +10,8 @@ long double calcularTermino(int n, long double x) {
 int main(int argc, char* argv[]) {
     MPI_Init(&argc, &argv);
 
+    double start_time = MPI_Wtime(); // Start time
+
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -32,6 +34,31 @@ int main(int argc, char* argv[]) {
 
     if (rank == 0) {
         std::cout << std::setprecision(15) << "El logaritmo natural de " << x << " es: " << resultadoFinal << std::endl;
+
+        double end_time = MPI_Wtime(); // End time
+        double elapsed_time = end_time - start_time; // Elapsed time
+
+        std::cout << "Tiempo de ejecución: " << elapsed_time << " segundos" << std::endl;
+
+        // Calcular el speedup
+        double serial_time = 0.0;
+        if (rank == 0) {
+            double serial_start_time = MPI_Wtime(); // Start time
+
+            long double resultadoSerial = 0.0;
+            for (int i = 0; i < terminos; ++i) {
+                resultadoSerial += calcularTermino(i, x);
+            }
+
+            double serial_end_time = MPI_Wtime(); // End time
+            serial_time = serial_end_time - serial_start_time; // Serial time
+
+            std::cout << "El logaritmo natural de " << x << " (serial) es: " << resultadoSerial << std::endl;
+            std::cout << "Tiempo de ejecución (serial): " << serial_time << " segundos" << std::endl;
+        }
+
+        double speedup = serial_time / elapsed_time;
+        std::cout << "Speedup: " << speedup << std::endl;
     }
 
     MPI_Finalize();

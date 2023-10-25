@@ -7,6 +7,8 @@
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
 
+    double start_time = MPI_Wtime(); // Start time
+
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -16,13 +18,13 @@ int main(int argc, char** argv) {
     for(int i=0; i<rank; i++){
         obtener_IP(direccion_ip); // Obtener la dirección IP
         strncpy(direcciones_ip[i], direccion_ip, 20); // Copiar la dirección IP al arreglo
-        std::cout << "rank: " << rank << std::endl;
+        /* std::cout << "rank: " << rank << std::endl;
         std::cout << "direccion_ip: " << direccion_ip << std::endl;
-        std::cout << "direcciones_ip: " << direcciones_ip[i] << std::endl;
+        std::cout << "direcciones_ip: " << direcciones_ip[i] << std::endl; */
     }
     
 
-    // Gather all IP addresses to the root process
+    // Juntar todas las direcciones IP en un arreglo
     MPI_Gather(direccion_ip, 20, MPI_CHAR, direcciones_ip, 20, MPI_CHAR, 0, MPI_COMM_WORLD);
 
     if (rank < 32) {
@@ -67,6 +69,13 @@ int main(int argc, char** argv) {
         for (int i = 0; i < size; ++i) {
             std::cout << "el patron " << i << " aparece " << resultados[i] << " veces. Buscado por " << direcciones_ip[i] << std::endl;
         }
+    }
+
+    double end_time = MPI_Wtime(); // End time
+    double elapsed_time = end_time - start_time; // Elapsed time
+
+    if (rank == 0) {
+        std::cout << "Tiempo de ejecución: " << elapsed_time << " segundos" << std::endl;
     }
 
     MPI_Finalize();

@@ -9,6 +9,8 @@ using namespace std;
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
 
+    double start_time = MPI_Wtime(); // Start time
+
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -99,6 +101,55 @@ int main(int argc, char** argv) {
             cout << total_primos[i] << " ";
         }
         cout << endl;
+
+        double end_time = MPI_Wtime(); // End time
+        double elapsed_time = end_time - start_time; // Elapsed time
+
+        cout << "Tiempo de ejecución: " << elapsed_time << " segundos" << endl;
+
+        // Calcular el speedup
+        double serial_time = 0.0;
+        if (rank == 0) {
+            double serial_start_time = MPI_Wtime(); // Start time
+            std::vector<int> primos_menores;
+            for (int i = 2; i <= raiz; ++i) {
+                bool es_primo = true;
+                for (int j = 2; j < i; ++j) {
+                    if (i % j == 0) {
+                        es_primo = false;
+                        break;
+                    }
+                }
+                if (es_primo) {
+                    primos_menores.push_back(i);
+                }
+            }
+
+            int count = primos_menores.size();
+            vector<int> total_primos = primos_menores;
+
+            for (int i = raiz + 1; i <= n; ++i) {
+                bool es_primo = true;
+                for (int primo : primos_menores) {
+                    if (i % primo == 0) {
+                        es_primo = false;
+                        break;
+                    }
+                }
+                if (es_primo) {
+                    ++count;
+                    total_primos.push_back(i);
+                }
+            }
+
+            sort(total_primos.begin(), total_primos.end());
+
+            double serial_end_time = MPI_Wtime(); // End time
+            serial_time = serial_end_time - serial_start_time; // Serial time
+        }
+
+        double speedup = serial_time / elapsed_time;
+        cout << "Speedup: " << speedup << endl;
     }
 
     MPI_Finalize();

@@ -6,27 +6,10 @@
 
 using namespace std;
 
-int main(int argc, char** argv) {
-    MPI_Init(&argc, &argv);
-
-    double start_time = MPI_Wtime(); // Start time
-
-    int rank, size;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-
-    // Leer n
-    int n;
-    if (rank == 0) {
-        cout << "Ingrese n: ";
-        cin >> n;
-    }
-    MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
-
-
-    //Encontrar primos menores a raiz de n.
+//funcion para contar primos menores que raiz de n
+vector<int> contar_primos_menores(int n){
     int raiz = sqrt(n);
-    std::vector<int> primos_menores;
+    vector<int> primos_menores;
     for (int i = 2; i <= raiz; ++i) {
         bool es_primo = true;
         for (int j = 2; j < i; ++j) {
@@ -39,8 +22,33 @@ int main(int argc, char** argv) {
             primos_menores.push_back(i);
         }
     }
+    return primos_menores;
+}
+
+int main(int argc, char** argv) {
+    MPI_Init(&argc, &argv);
+
+    int rank, size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    // Leer n
+    int n;
+    if (rank == 0) {
+        cout << "Ingrese n: ";
+        cin >> n;
+    }
+
+    double start_time = MPI_Wtime(); // Start time
+
+    MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+
+    //Encontrar primos menores a raiz de n.
+    vector<int> primos_menores = contar_primos_menores(n);
 
     // Dividir los números entre raiz de n y n entre los procesos
+    int raiz = sqrt(n);
     int numeros_por_proceso = (n - raiz) / size;
     int inicio = raiz + rank * numeros_por_proceso;
     int fin = inicio + numeros_por_proceso;
@@ -111,23 +119,12 @@ int main(int argc, char** argv) {
         double serial_time = 0.0;
         if (rank == 0) {
             double serial_start_time = MPI_Wtime(); // Start time
-            std::vector<int> primos_menores;
-            for (int i = 2; i <= raiz; ++i) {
-                bool es_primo = true;
-                for (int j = 2; j < i; ++j) {
-                    if (i % j == 0) {
-                        es_primo = false;
-                        break;
-                    }
-                }
-                if (es_primo) {
-                    primos_menores.push_back(i);
-                }
-            }
+            vector<int> primos_menores = contar_primos_menores(n);
 
             int count = primos_menores.size();
             vector<int> total_primos = primos_menores;
 
+            // Contar primos
             for (int i = raiz + 1; i <= n; ++i) {
                 bool es_primo = true;
                 for (int primo : primos_menores) {
@@ -146,6 +143,7 @@ int main(int argc, char** argv) {
 
             double serial_end_time = MPI_Wtime(); // End time
             serial_time = serial_end_time - serial_start_time; // Serial time
+            cout << "Tiempo de ejecución serial: " << serial_time << " segundos" << endl;
         }
 
         double speedup = serial_time / elapsed_time;

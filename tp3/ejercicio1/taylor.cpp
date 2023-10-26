@@ -3,8 +3,11 @@
 #include <cmath>
 #include <mpi.h>
 
+using namespace std;
+
 long double calcularTermino(int n, long double x) {
-    return pow(-1, n) * pow(x - 1, n + 1) / (n + 1);
+    long double result = 2 * (1 / (2*n + 1.0)) * float(pow((float(x-1)/float(x+1)), 2*n + 1));
+    return result;
 }
 
 int main(int argc, char* argv[]) {
@@ -17,7 +20,7 @@ int main(int argc, char* argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     const int terminos = 10000000; // Número total de términos
-    const long double x = 1.5e6; // Número para el que se calculará el logaritmo natural
+    const long double x = 1500000.0; // Número para el que se calculará el logaritmo natural
 
     long double resultado = 0.0;
 
@@ -28,6 +31,9 @@ int main(int argc, char* argv[]) {
     for (int i = inicio; i < fin; ++i) {
         resultado += calcularTermino(i, x);
     }
+
+    /* cout << "rank: " << rank << endl;
+    cout << "resultado: " << resultado << endl; */
 
     long double resultadoFinal;
     MPI_Reduce(&resultado, &resultadoFinal, 1, MPI_LONG_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);

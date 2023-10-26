@@ -15,13 +15,8 @@ int main(int argc, char** argv) {
 
     char direcciones_ip[size][20]; // Almacenar las direcciones IP
     char direccion_ip[20];
-    for(int i=0; i<rank; i++){
-        obtener_IP(direccion_ip); // Obtener la dirección IP
-        strncpy(direcciones_ip[i], direccion_ip, 20); // Copiar la dirección IP al arreglo
-        /* std::cout << "rank: " << rank << std::endl;
-        std::cout << "direccion_ip: " << direccion_ip << std::endl;
-        std::cout << "direcciones_ip: " << direcciones_ip[i] << std::endl; */
-    }
+
+    obtener_IP(direccion_ip);
     
 
     // Juntar todas las direcciones IP en un arreglo
@@ -53,7 +48,7 @@ int main(int argc, char** argv) {
 
         // Enviar el resultado y la dirección IP al proceso 0
         MPI_Send(&count, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
-        MPI_Send(direccion_ip, 20, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
+        //MPI_Send(direccion_ip, 20, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
     }
 
     if (rank == 0) {
@@ -62,7 +57,7 @@ int main(int argc, char** argv) {
 
         for (int i = 0; i < size; ++i) {
             MPI_Recv(&resultados[i], 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            MPI_Recv(direcciones_ip[i], 20, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            //MPI_Recv(direcciones_ip[i], 20, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
 
         // Imprimir resultados ordenados
